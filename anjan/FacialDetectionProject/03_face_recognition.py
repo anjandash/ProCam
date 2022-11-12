@@ -11,6 +11,7 @@ Developed by Marcelo Rovai - MJRoBot.org @ 21Feb18
 import cv2
 import numpy as np
 import os 
+import sys
 
 recognizer = cv2.face.LBPHFaceRecognizer_create()
 recognizer.read('trainer/trainer.yml')
@@ -23,7 +24,15 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 id = 0
 
 # names related to ids: example ==> Marcelo: id=1,  etc
-names = ['None', 'Marcelo', 'Paula', 'Ilza', 'Z', 'W'] 
+# get_config
+
+names = {}
+
+with open(sys.path[0] + "/config.txt", "r") as f: 
+    for line in f.readlines():
+        if len(line.strip()) > 0:
+            user_id, user_nm = line.strip().split(".")
+            names[int(user_id)] = user_nm
 
 # Initialize and start realtime video capture
 cam = cv2.VideoCapture(0)
@@ -37,7 +46,7 @@ minH = 0.1*cam.get(4)
 while True:
 
     ret, img =cam.read()
-    img = cv2.flip(img, -1) # Flip vertically
+    #img = cv2.flip(img, -1) # Flip vertically
 
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
@@ -50,20 +59,31 @@ while True:
 
     for(x,y,w,h) in faces:
 
-        cv2.rectangle(img, (x,y), (x+w,y+h), (0,255,0), 2)
+        img = cv2.rectangle(img, (x,y), (x+w,y+h), (0,255,0), 2)
 
         id, confidence = recognizer.predict(gray[y:y+h,x:x+w])
+        print(id)
+
+        ####
+        #CODE
+        ####
+
+        #id == None:
+
 
         # Check if confidence is less them 100 ==> "0" is perfect match 
         if (confidence < 100):
-            id = names[id]
+            id = names.get(id, None)
             confidence = "  {0}%".format(round(100 - confidence))
         else:
             id = "unknown"
             confidence = "  {0}%".format(round(100 - confidence))
         
+        (w_lab, h_lab), _ = cv2.getTextSize(str(id), cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
+        img = cv2.rectangle(img, (x, y - 30), (x + w, y), [0,255,0], -1) # blue rectangle
+
         cv2.putText(img, str(id), (x+5,y-5), font, 1, (255,255,255), 2)
-        cv2.putText(img, str(confidence), (x+5,y+h-5), font, 1, (255,255,0), 1)  
+        cv2.putText(img, str(confidence), (x+5+w_lab+w_lab,y-5), font, 1, (0,0,0), 2)  
     
     cv2.imshow('camera',img) 
 
